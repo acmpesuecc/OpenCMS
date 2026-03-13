@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+
+<body>
+
+<h2>Login</h2>
+
+<form id="loginForm">
+    <input type="email" id="email" placeholder="Email" required>
+    <br><br>
+
+    <input type="password" id="password" placeholder="Password" required>
+    <br><br>
+
+    <button type="submit">Login</button>
+</form>
+
+<br>
+<hr>
+<br>
+
+<!-- GitHub OAuth Login -->
+<a href="/login/github">
+    <button type="button">Sign in with GitHub</button>
+</a>
+
+<br><br>
+
+<p id="result"></p>
+
+<p>
+    Don't have an account?
+    <a href="/signup">Sign up</a>
+</p>
+
+<script>
+document.getElementById("loginForm").addEventListener("submit", async function(e) {
+
+    e.preventDefault();
+
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const response = await fetch("/login", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            email: email,
+            password: password
+        })
+    });
+
+    if (response.ok) {
+        window.location.href = "/dashboard";
+    } else {
+        const data = await response.json();
+        document.getElementById("result").innerText = data.detail;
+    }
+
+});
+</script>
+
+</body>
+</html>
