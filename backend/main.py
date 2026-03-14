@@ -150,7 +150,7 @@ async def github_callback(request: Request):
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
-    return FileResponse("frontend/dashboard.html")
+    return FileResponse("frontend/index.html")
 
 
 @app.post("/blogs")
