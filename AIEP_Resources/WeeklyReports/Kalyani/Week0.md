@@ -10,7 +10,7 @@ Week 0 submission.
 - https://www.ibm.com/think/topics/graphql
 - https://www.cloudflare.com/learning/what-is-cloudflare/
 
-##Sites Explored
+## Sites Explored
 - https://news.ycombinator.com/
 - https://www.cloudflare.com/en-in/application-services/products/cdn/
 - http://0x0.st/
