@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <!-- <link rel="stylesheet" href="style.css"> -->
 </head>
 <style>
     button{
@@ -49,6 +50,9 @@
     height:100%;
     width:50%;
     background-color: rgba(255, 255, 255, 0.759);
+    /* display: flex; */
+    /* justify-content: center;
+    align-items: center; */
 }
 
 dialog {
@@ -88,6 +92,10 @@ dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: poi
     
 }
 
+/* #table{
+    flex-direction: column;
+} */
+
 #table-header{
     background-color: rgb(230, 230, 230);
 }
@@ -100,7 +108,12 @@ dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: poi
         </div>
     </div>
     <div id="form">
-        
+        <!-- <select name="" id="">
+            <option value="">Select Component</option>
+            <option value="699998712d3a8a8ba237d663">text</option>
+            <option value="699998e72d3a8a8ba237d664">media</option>
+        </select> -->
+        <!-- <button type="button" onclick="submit()">submit</button> -->
          <dialog id="createField">
              <div id="fieldModal">
                 <h3>New Field Type</h3>
@@ -132,6 +145,8 @@ dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: poi
         let title=""
         const fields= document.getElementById("fields")
 
+
+
         function closeModal(){
             document.querySelector("#preview #table").innerHTML=""
             newComps=[]
@@ -141,11 +156,11 @@ dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: poi
         async function compList(){
             const resp=await fetch("/get-components/")
             const compList= await resp.json()
-            const comps=compList.message
+            const hi=compList.message
             console.log(compList)
-            console.log(comps)
+            console.log(hi)
             let output=[]
-            for(i of comps){
+            for(i of hi){
                 output+=`<button id="comp" value=${i._id}>${i.name}</button>`
             }
             document.getElementById("compList").innerHTML=output
@@ -180,10 +195,13 @@ dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: poi
                 fieldType= await fieldType.json()
                 let output="" //this string is appended as innerHTML of the components div, to make populating data easier
                 for(i of fieldType.field["components"]){
+                    // components=await fieldType["components"].map(fetchComponent)
                     let comp= await fetch(`/get-components/${i}`)
                     comp= await comp.json()
-                    
-                    output+= `<div style="display:flex; padding:10px; gap:50%;"><p style="width:50px;">${comp.message.name}</p><p>${comp.message.type}</p></div>`
+                    // const ele= document.createElement("h1")
+                    // ele.textContent=comp.message.name
+                    // components.appendChild(ele)
+                    output+= `<div style="display:flex; padding:10px; gap:50%;"><p>${comp.message.name}</p><p>${comp.message.type}</p></div>`
                     console.log(output)
                 }
                 componentsTable.innerHTML=output
@@ -228,7 +246,29 @@ dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: poi
             console.log("error", err)
         }
     }
+// main()
 populate()
+
+
+    // const options = document.querySelector("select")
+
+    // options.addEventListener("change", async (e) => {
+    //     const val = e.target.value
+    //     let comp= await fetch(`/get-components/${val}`)
+    //     comp= await comp.json()
+    //     newComps.push(val)
+    //     console.log("fields: ",newComps)
+    //     const ele = document.createElement("div")
+    //     const name= document.createElement("p")
+    //     name.textContent=comp.message.name
+    //     const id=document.createElement("p")
+    //     id.textContent=comp.message.type
+    //     ele.id="compDesign"
+    //     // ele.textContent = val
+    //     ele.append(name,id)
+    //     document.getElementById("form").appendChild(ele)
+    // })
+
 
     const options = document.querySelector("#compList")
 
@@ -241,11 +281,11 @@ populate()
         console.log("fields: ",newComps)
         const ele = document.createElement("div")
         const name= document.createElement("p")
-        name.style="width:50px;"
         name.textContent=comp.message.name
         const id=document.createElement("p")
         id.textContent=comp.message.type
         ele.id="table"
+        // ele.textContent = val
         ele.append(name,id)
         document.getElementById("preview").appendChild(ele)
     })
