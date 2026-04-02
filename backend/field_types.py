@@ -19,35 +19,6 @@ templates = Jinja2Templates(directory="templates")
 
 app = FastAPI()
 
-collection_schema= {
-        "bsonType": "object",
-        "properties":{
-            "title": {
-                "bsonType": "string",
-            },
-            "components": {
-                "bsonType": "array",
-
-                "items": {
-                    "bsonType": "objectId"
-                }
-            }
-        }
-}
-
-component_schema= {
-        "bsonType": "object",
-        "required":["name","type"],
-        "properties":{
-            "name":{
-                "bsonType": "string",
-            },
-            "type":{
-                "bsonType": "string",
-            }
-        }
-}
-
 class ComponentType(BaseModel):
     name: str
     type: str
@@ -63,21 +34,13 @@ async def root(request: Request):
 
 @app.post("/fieldtypes")
 async def func(collection_type: CollectionType):
-    # collection_data= await request.json() 
-    # collectionJson= {
-    #     "title": collection_type.get("title", ""),
-    #     "components": collection_type.get("components", [])
-    # }
     try:
         data=collection_type.model_dump()
-        # comps=data["components"]
-        # for i in range(len(data["components"])):
-        #     data["components"][i]=ObjectId(data["components"][i])
-
+        
         result= await collection_types.insert_one(data)
         return {"id": str(result.inserted_id)}
     except Exception as e:
-        return {"message":"Unsuccessful","error": e}
+        return {"message":"Unsuccessful","error": str(e)}
 
 @app.get("/get-components")
 async def func():
@@ -87,7 +50,7 @@ async def func():
             item["_id"] = str(item["_id"])
         return {"message": result}
     except Exception as e:
-        return {"message":"Unsuccessful","error": e}
+        return {"message":"Unsuccessful","error": str(e)}
 
 @app.get("/get-components/{componentId}")
 async def func(componentId:str):
@@ -97,18 +60,8 @@ async def func(componentId:str):
             result["_id"] = str(result["_id"])
         return {"message": result}
     except Exception as e:
-        return {"message":"Unsuccessful","error": e}
+        return {"message":"Unsuccessful","error": str(e)}
 
-# async def func(request: Request):
-
-#     result= await components.find().to_list(100)
-#     return templates.TemplateResponse(
-#         "collection_types.html",
-#         {
-#             "request": request,
-#             "collections": result
-#         }
-#     )
 
 @app.get("/field-types/")
 async def getfield():
