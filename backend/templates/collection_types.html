@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    button{
+        background-color: black;
+        color:white;
+        padding:7px;
+        cursor:pointer;
+        border:0;
+        border-radius: 6px;
+        font-weight:700;    
+    }
+    body{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height:100vh;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+    }
+
+#fields{
+    width: 25%;
+    height:100%;
+    background-color: rgb(30, 30, 101);
+    background-color: #5F00BA;
+    color: white;
+}
+
+#fieldtype{
+    cursor: pointer;
+    padding: 2px;
+    text-align: center;
+    transition: 0.5s;
+}
+
+#fieldtype:hover{
+    background-color: rgb(120, 100, 224);
+}
+
+#form{
+    height:100%;
+    width:50%;
+    background-color: rgba(255, 255, 255, 0.759);
+}
+
+dialog {
+    border: none;
+    border-radius: 10px;
+    padding: 24px;
+    width: 40%;
+    height: 80%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+dialog::backdrop { background: rgba(0,0,0,0.3); }
+dialog h3 { margin-bottom: 12px; }
+dialog input { display: block; width: 100%; padding: 8px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; margin-right: 8px; }
+
+#fieldModal{
+    display: flex;
+    flex-direction: column;
+    gap:20px;
+    height:100%;
+}
+
+#compDesign{
+    display: flex;
+    gap:25px;
+    
+    background-color: rgb(234, 228, 228);
+}
+
+#preview{
+    height:80%;
+    background-color: whitesmoke;
+}
+
+#table, #table-header{
+    display: flex; padding:10px; gap:50%;
+    
+}
+
+#table-header{
+    background-color: rgb(230, 230, 230);
+}
+</style>
+<body>
+
+    <div id="fields">
+        <div style="display: flex; justify-content: center;">
+            <button type="button" onclick="newField()">New Field Type</button>
+        </div>
+    </div>
+    <div id="form">
+        
+         <dialog id="createField">
+             <div id="fieldModal">
+                <h3>New Field Type</h3>
+                <input type="text" id="field-title" placeholder="Field type name" />
+                <div id="compList">
+    
+                </div>
+                <div id="preview">
+                    <div id="table-header">
+                        <p>Name</p>
+                        <p>Type</p>
+                    </div>
+                </div>
+                <div id="buttons" style="position:relative; bottom:2%;">
+                    <button onclick="closeModal()">Cancel</button>
+                    <button onclick="createField()">Create</button>
+                </div>
+            </div>
+        </dialog>
+        <div id="components">
+            <div id="table-header">
+                <p>Name</p>
+                <p>Type</p>
+            </div>
+            <div id="compTable" style="display: flex; flex-direction: column;"></div>
+        </div>
+    </div>
+    <script>
+        let title=""
+        const fields= document.getElementById("fields")
+
+        function closeModal(){
+            document.querySelector("#preview #table").innerHTML=""
+            newComps=[]
+            document.getElementById('createField').close()
+        }
+        
+        async function compList(){
+            const resp=await fetch("/get-components/")
+            const compList= await resp.json()
+            const comps=compList.message
+            console.log(compList)
+            console.log(comps)
+            let output=[]
+            for(i of comps){
+                output+=`<button id="comp" value=${i._id}>${i.name}</button>`
+            }
+            document.getElementById("compList").innerHTML=output
+        }
+
+        function newField(){
+            document.getElementById("createField").showModal()
+            compList()
+        }
+        async function createField(){
+            const fieldName = document.getElementById("field-title").value
+            title=fieldName
+            const resp = await fetch("/fieldtypes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: fieldName, components: newComps })
+            })
+            const data = await resp.json()
+            const ele= document.createElement("div")
+            ele.id="fieldtype"
+            ele.textContent=fieldName
+            ele.value=data.id
+            ele.onclick= async (e)=>{await main(e.target.value)}
+            fields.appendChild(ele)
+            document.getElementById('createField').close()
+        }
+        newComps=[]
+        const componentsTable = document.querySelector("#compTable")
+        async function main(fieldId){
+            try{
+                let fieldType= await fetch(`/fieldtypes/${fieldId}`)
+                fieldType= await fieldType.json()
+                let output="" //this string is appended as innerHTML of the components div, to make populating data easier
+                for(i of fieldType.field["components"]){
+                    let comp= await fetch(`/get-components/${i}`)
+                    comp= await comp.json()
+                    
+                    output+= `<div style="display:flex; padding:10px; gap:50%;"><p style="width:50px;">${comp.message.name}</p><p>${comp.message.type}</p></div>`
+                    console.log(output)
+                }
+                componentsTable.innerHTML=output
+
+            }
+            catch(err){
+                console.log("error", err)
+            }
+        }
+
+
+
+        function submit(){
+            console.log("yooo")
+            fetch("/fieldtypes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    "title": title,
+                    "components": newComps
+                })
+            })
+        }
+
+        
+        // function to populate with all field types
+        async function populate(){
+            try{
+                let resp= await fetch(`/field-types/`)
+            fieldTypes= await resp.json()
+            // const components=[]
+            for(i of fieldTypes.field){
+                const ele= document.createElement("div")
+                ele.id="fieldtype"
+                ele.textContent=i.title
+                ele.value=`${i._id}`
+                ele.onclick= async (e)=>{await main(e.target.value)}
+                fields.appendChild(ele)
+            }
+        }
+        catch(err){
+            console.log("error", err)
+        }
+    }
+        populate()
+
+        const options = document.querySelector("#compList")
+
+        options.addEventListener("click", async (e) => {
+            const val = e.target.value
+            let comp= await fetch(`/get-components/${val}`)
+            comp= await comp.json()
+            console.log(comp)
+            newComps.push(val)
+            console.log("fields: ",newComps)
+            const ele = document.createElement("div")
+            const name= document.createElement("p")
+            name.style="width:50px;"
+            name.textContent=comp.message.name
+            const id=document.createElement("p")
+            id.textContent=comp.message.type
+            ele.id="table"
+            ele.append(name,id)
+            document.getElementById("preview").appendChild(ele)
+        })
+        
+    </script>
+    
+</body>
+</html>
