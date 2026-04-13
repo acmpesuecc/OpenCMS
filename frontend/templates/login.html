@@ -2,66 +2,80 @@
 <html>
 <head>
     <title>Login</title>
+    <link rel="stylesheet" href="/static/css/login.css">
 </head>
 
 <body>
 
-<h2>Login</h2>
+<div class="container">
 
-<form id="loginForm">
-    <input type="email" id="email" placeholder="Email" required>
-    <br><br>
+    <div class="logo">
+      <img src="/static/hand-wave.svg" alt="logo">
+    </div>
 
-    <input type="password" id="password" placeholder="Password" required>
-    <br><br>
+    <form id="loginForm">
 
-    <button type="submit">Login</button>
-</form>
+        <div class="input-group">
+            <input type="email" id="email" required>
+            <label>Email ID</label>
+        </div>
 
-<br>
-<hr>
-<br>
+        <div class="input-group">
+            <input type="password" id="password" required>
+            <label>Password</label>
+        </div>
 
-<!-- GitHub OAuth Login -->
-<a href="/login/github">
-    <button type="button">Sign in with GitHub</button>
-</a>
+        <button type="submit">Login</button>
+    </form>
 
-<br><br>
+    <hr>
 
-<p id="result"></p>
+    <a href="/login/github">
+        <button type="button" class="github-btn">Log in with GitHub</button>
+    </a>
 
-<p>
-    Don't have an account?
-    <a href="/signup">Sign up</a>
-</p>
+    <p>Don't have an account? <a href="/signup">Sign up</a></p>
+
+    <p id="result"></p>
+
+</div>
 
 <script>
 document.getElementById("loginForm").addEventListener("submit", async function(e) {
 
     e.preventDefault();
 
+    const btn = this.querySelector("button");
+    const originalText = btn.innerText;
+
+    btn.innerText = "Logging in...";
+    btn.disabled = true;
+
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    const response = await fetch("/login", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            email: email,
-            password: password
-        })
-    });
+    try {
+        const response = await fetch("/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, password })
+        });
 
-    if (response.ok) {
-        window.location.href = "/dashboard";
-    } else {
-        const data = await response.json();
-        document.getElementById("result").innerText = data.detail;
+        if (response.ok) {
+            window.location.href = "/dashboard";
+        } else {
+            const data = await response.json();
+            document.getElementById("result").innerText = data.detail;
+        }
+
+    } catch (err) {
+        document.getElementById("result").innerText = "SERVER ERROR";
     }
 
+    btn.innerText = originalText;
+    btn.disabled = false;
 });
 </script>
 
