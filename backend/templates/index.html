@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <title>Document</title>
+</head>
+
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #fields {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        justify-content: flex-start;
+        align-items: center;
+        width: 25%;
+        background-color: #1f2937; /* Dark gray/blackish */
+        color: #f9fafb;
+        min-height: 85vh;
+        padding: 30px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    #fields button {
+        flex: none; /* Changed from 1 to stop stretching weirdly */
+        box-sizing: border-box;
+        width: 80%;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 6px;
+        background-color: #374151;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    #fields button:hover {
+        background-color: #4b5563;
+    }
+
+    #content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Center content vertically */
+        align-items: center;
+        width: 65%;
+        min-height: 85vh;
+        background-color: #111827; /* Deeper blackish */
+        color: #f9fafb;
+        margin-left: 20px;
+        border-radius: 12px;
+        padding: 40px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    #nofield {
+        width: 60%;
+    }
+
+    input[type="file"] {
+        padding: 8px;
+        background-color: transparent;
+        cursor: pointer;
+        width: 100%;
+    }
+
+    input[type="file"]::file-selector-button {
+        margin-right: 12px;
+        padding: 6px 16px;
+        border: none;
+        border-radius: 4px;
+        background-color: #7a0b87;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    input[type="file"]::file-selector-button:hover {
+        background-color: #690a73;
+    }
+
+    #file {
+        background-color: #f3f4f6;
+        border: 2px dashed #9ca3af;
+        border-radius: 8px;
+        width: 60%;
+        min-height: 150px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+    }
+
+    #file img {
+        max-width: 100%;
+        max-height: 200px;
+        margin-top: 15px;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    #title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 30px;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        background-color: #f9fafb;
+        color: #1f2937;
+        width: 80%;
+    }
+
+    #title:focus {
+        border-color: #3b82f6;
+        background-color: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Minimal, clean styling for inputs */
+    input, textarea, select {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+</style>
+
+<body>
+    <div id="fields">
+
+    </div>
+    <div id="content">
+        <h1 id="nofield">Select a Field type to create an entry with</h1>
+    </div>
+    <script>
+        document.addEventListener("change", async (e) => {
+            if (e.target.type === "file") {
+                const file = e.target.files[0];
+                if (!file) return; 
+
+                try{
+                    const filename = `${Date.now()}_${file.name}`;
+                    const formData = new FormData();
+                    formData.append("file", file, filename);
+
+                    console.log("Uploading file...");
+                    let uploadResp = await fetch("http://localhost:8000/upload/", {
+                        method: "POST",
+                        body: formData
+                    });
+                    
+                    if (!uploadResp.ok) throw new Error(`Upload failed: ${uploadResp.status}`);
+                    let uploadResult = await uploadResp.json();
+                    if (uploadResult.err) throw new Error(uploadResult.err);
+
+                    const encodedFilename = encodeURIComponent(filename);
+                    let urlResp = await fetch(`http://localhost:8000/image-url/${encodedFilename}`);
+                    
+                    if (!urlResp.ok) throw new Error("Failed to retrieve image URL.");
+                    let urlResult = await urlResp.json();
+                    
+                    if (urlResult.error) throw new Error("Error while retrieving image.");
+                    
+                    const container = e.target.closest("div");
+                    const img = container.querySelector("img");
+                    img.src = urlResult.url;
+                    img.id = file.name; 
+                    img.style.display = "block";
+                    img.style.maxWidth = "150px";
+                    img.style.maxHeight = "150px";
+                    img.style.objectFit = "cover";
+                    img.style.marginTop = "10px";
+                    img.style.borderRadius = "4px";
+
+                    console.log("Image uploaded and displayed successfully!");
+
+                } catch (err) {
+                    console.error("Image Upload Error:", err);
+                    alert("Failed to upload image. Check console for details.");
+                }
+            }
+        });
+
+let fieldId = ""
+        const fields = document.getElementById("fields")
+        // function to populate with all field types
+        async function populate() {
+            try {
+                let resp = await fetch(`http://localhost:8000/field-types/`)
+                fieldTypes = await resp.json()
+                // const components=[]
+                for (i of fieldTypes.field) {
+                    const ele = document.createElement("button")
+                    ele.id = "fieldtype"
+                    ele.textContent = i.title
+                    ele.value = `${i._id}`
+                    // ele.onclick= async (e)=>{await main(e.target.value)}
+                    fields.appendChild(ele)
+                }
+            }
+            catch (err) {
+                console.log("error", err)
+            }
+        }
+
+        // ── HTML → MARKDOWN (from editor.html) ──
+        function htmlToMarkdown(html) {
+            const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
+            return walkNode(doc.body).trim()
+        }
+
+        function walkNode(node) {
+            if (node.nodeType === Node.TEXT_NODE) return node.textContent
+            if (node.nodeType !== Node.ELEMENT_NODE) return ''
+
+            const tag = node.tagName.toLowerCase()
+            const inner = () => Array.from(node.childNodes).map(walkNode).join('')
+
+            switch (tag) {
+                case 'h1': return `\n# ${inner()}\n`
+                case 'h2': return `\n## ${inner()}\n`
+                case 'p':  return `\n${inner()}\n`
+                case 'br': return '\n'
+                case 'strong':
+                case 'b': return `**${inner()}**`
+                case 'em':
+                case 'i': return `*${inner()}*`
+                case 's':
+                case 'strike': return `~~${inner()}~~`
+                case 'blockquote': return `\n> ${inner().trim()}\n`
+                case 'ul':
+                    return '\n' + Array.from(node.children)
+                        .map(li => `- ${walkNode(li).trim()}`).join('\n') + '\n'
+                case 'ol':
+                    return '\n' + Array.from(node.children)
+                        .map((li, i) => `${i + 1}. ${walkNode(li).trim()}`).join('\n') + '\n'
+                case 'li': return inner()
+                default: return inner()
+            }
+        }
+
+        // ── MARKDOWN → HTML (from editor.html) ──
+        function markdownToHtml(md) {
+            const lines = md.split('\n')
+            const out = []
+            let i = 0
+
+            while (i < lines.length) {
+                const line = lines[i]
+                const h1 = line.match(/^# (.+)/)
+                const h2 = line.match(/^## (.+)/)
+
+                if (h1) { out.push(`<h1>${inl(h1[1])}</h1>`); i++; continue }
+                if (h2) { out.push(`<h2>${inl(h2[1])}</h2>`); i++; continue }
+
+                if (line.startsWith('> ')) {
+                    out.push(`<blockquote>${inl(line.slice(2))}</blockquote>`)
+                    i++; continue
+                }
+
+                if (/^[-*+] /.test(line)) {
+                    const items = []
+                    while (i < lines.length && /^[-*+] /.test(lines[i])) {
+                        items.push(`<li>${inl(lines[i].replace(/^[-*+] /, ''))}</li>`)
+                        i++
+                    }
+                    out.push(`<ul>${items.join('')}</ul>`)
+                    continue
+                }
+
+                if (/^\d+\. /.test(line)) {
+                    const items = []
+                    while (i < lines.length && /^\d+\. /.test(lines[i])) {
+                        items.push(`<li>${inl(lines[i].replace(/^\d+\. /, ''))}</li>`)
+                        i++
+                    }
+                    out.push(`<ol>${items.join('')}</ol>`)
+                    continue
+                }
+
+                if (line.trim() === '') { out.push(''); i++; continue }
+
+                out.push(`<p>${inl(line)}</p>`)
+                i++
+            }
+
+            return out.join('\n')
+        }
+
+        function inl(t) {
+            return t
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/~~(.+?)~~/g, '<strike>$1</strike>')
+        } 
+
+        async function loadField(fieldId) {
+            console.log("hello")
+            let resp = await fetch(`http://localhost:8000/fieldtypes/${fieldId}`)
+            resp = await resp.json()
+            field = resp.field
+            console.log(field)
+            let str = `<input type="text" id="title" placeholder="Enter a Title...">`
+            let richTextFields = []; // To keep track of multiple rich text editors
+
+            // Wait for all fetches inside `forEach` to finish by converting it to a `for...of` loop with an index instead of `forEach`
+            let index = 0;
+            for (const compId of field.components) {
+                console.log(compId)
+                let cresp = await fetch(`http://localhost:8000/get-components/${compId}`)
+                cresp = await cresp.json()
+                const comp = cresp.message
+                console.log(comp)
+                
+                const uniqueId = `${comp._id}-${index}`; // Fix for duplicate toolbars
+                index++;
+
+                if (comp.type === "file") {
+                    str += `<div id="${uniqueId}" class="data-field" data-id="${comp._id}" data-type="file"><input type="${comp.type}"><img></div>`
+                } else if (comp.type === "richtext" || comp.type === "editor" || comp.type === "text") {
+                    richTextFields.push({ ...comp, uniqueId });
+                    const wrapperId = `rich-wrapper-${uniqueId}`;
+                    str += `
+                    <div id="${wrapperId}" class="data-field" data-id="${comp._id}" data-type="richtext" style="width: 80%; margin-bottom: 20px; background: white; color: black; border-radius: 6px;">
+                        <button id="toggle-btn-${uniqueId}" type="button" style="margin: 10px; padding: 5px 10px; cursor: pointer; border: none; background: #1e293b; color: white; border-radius: 4px;">Switch to Markdown</button>
+                        <div id="quill-editor-${uniqueId}" style="height: 200px;"></div>
+                        <textarea id="md-editor-${uniqueId}" class="markdown-output" style="display: none; width: 100%; height: 200px; font-family: monospace; padding: 10px; box-sizing: border-box; resize: vertical; border: none; outline: none;"></textarea>
+                    </div>`;
+                } else {
+                    str += `<input type="${comp.type}" id="${uniqueId}" class="data-field" data-id="${comp._id}" data-type="regular">`
+                }
+                console.log(str)
+            }
+            str += `<div id="buttons" style="margin-top: 20px; width: 80%; display: flex; gap: 15px;"><button id="submit" style="flex: 1; padding: 12px; background: #065f46; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">Submit</button><button id="draft" style="flex: 1; padding: 12px; background: #1e40af; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">Save As Draft</button></div>`
+            document.getElementById("content").innerHTML = str
+
+            // Initialize Quill for all rich text fields
+            richTextFields.forEach(comp => {
+                const uniqueId = comp.uniqueId
+                const quill = new Quill(`#quill-editor-${uniqueId}`, { theme: 'snow' });
+                const mdEditor = document.getElementById(`md-editor-${uniqueId}`);
+                const toggleBtn = document.getElementById(`toggle-btn-${uniqueId}`);
+                const wrapper = document.getElementById(`rich-wrapper-${uniqueId}`);
+                
+                // Store state on wrapper
+                wrapper.quillInstance = quill;
+                wrapper.mdEditorInstance = mdEditor;
+                wrapper.mode = 'rich';
+
+                toggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault(); 
+                    if (wrapper.mode === 'rich') {
+                        mdEditor.value = htmlToMarkdown(quill.root.innerHTML);
+                        document.getElementById(`quill-editor-${uniqueId}`).style.display = 'none';
+                        mdEditor.style.display = 'block';
+                        toggleBtn.textContent = 'Switch to Rich Text';
+                        wrapper.mode = 'markdown';
+                    } else {
+                        quill.root.innerHTML = markdownToHtml(mdEditor.value);
+                        mdEditor.style.display = 'none';
+                        document.getElementById(`quill-editor-${uniqueId}`).style.display = 'block';
+                        toggleBtn.textContent = 'Switch to Markdown';
+                        wrapper.mode = 'rich';
+                    }
+                });
+            });
+        }
+
+        populate()
+        // loadField()
+        newComps = []
+        const fiel = document.querySelector("#fields")
+        fiel.addEventListener("click", async (e) => {
+            fieldId = e.target.value
+            loadField(e.target.value)
+        })
+
+        const contentDiv = document.getElementById("content");
+        contentDiv.addEventListener("click", async (e) => {
+    // 1. Only trigger if the user clicked one of the two save buttons
+    if (e.target.id === "submit" || e.target.id === "draft") {
+        
+        // Ensure fieldId isn't empty (sanity check)
+        if (!fieldId) {
+            alert("Please select a field type first!");
+            return;
+        }
+
+        let data = {
+            "projectId": "69d0d07306d3d60e389fcfcf",
+            "fieldId": fieldId,
+            "status": e.target.id === "submit" ? "published" : "draft",
+            "title": document.getElementById("title").value || "",
+            "components": []
+        };
+
+        // 2. Gather data from all generic fields
+        const allFields = contentDiv.querySelectorAll(".data-field");
+        allFields.forEach(field => {
+            const compId = field.getAttribute("data-id") || field.id;
+            const compType = field.getAttribute("data-type");
+
+            if (compType === "file") {
+                const images = field.querySelectorAll("img");
+                const imageNames = Array.from(images).map(img => img.id);
+                data.components.push({
+                    componentId: compId,
+                    content: imageNames.length > 0 ? imageNames.join(",") : ""
+                });
+            } else if (compType === "richtext") {
+                let textContent = "";
+                if (field.mode === "rich") {
+                    textContent = htmlToMarkdown(field.quillInstance.root.innerHTML);
+                } else {
+                    textContent = field.mdEditorInstance.value;
+                }
+                data.components.push({
+                    componentId: compId,
+                    content: textContent
+                });
+            } else {
+                // For regular inputs (fallback)
+                data.components.push({
+                    componentId: compId,
+                    content: field.value || ""
+                });
+            }
+        });
+
+        console.log("Attempting to save to MongoDB...", data);
+
+        try {
+            // 3. Save to Database
+            const saveResponse = await fetch(`http://localhost:8000/fieldposts/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!saveResponse.ok) {
+                throw new Error(`DB Save failed with status: ${saveResponse.status}`);
+            }
+
+            const savedPost = await saveResponse.json();
+            console.log("DB Save Success! Response:", savedPost);
+
+            // 4. Extract ID (Handles both 'id' and '_id')
+            const postId = savedPost.id || savedPost._id || (savedPost.message && savedPost.message.id);
+            console.log("Extracted Post ID for GitHub call:", postId);
+
+            // 5. Trigger GitHub Publish
+            if (e.target.id === "submit" && postId) {
+                console.log("Condition met. Triggering GitHub Publish for ID:", postId);
+                
+                const publishResponse = await fetch(`http://localhost:8000/ssg/publish/${postId}`, {
+                    method: 'POST'
+                });
+
+                const result = await publishResponse.json();
+
+                if (publishResponse.ok) {
+                    alert(`Published successfully! Commit: ${result.commit}`);
+                } else {
+                    console.error("GitHub Error:", result);
+                    alert(`GitHub Error: ${result.detail || "Check console"}`);
+                }
+            } else {
+                alert("Draft saved to database successfully.");
+            }
+
+        } catch (err) {
+            console.error("Critical Failure:", err);
+            alert("System error. Check the terminal and browser console.");
+        }
+    }
+});
+    </script>
+</body>
+
+</html>

@@ -26,8 +26,8 @@
 #fields{
     width: 25%;
     height:100%;
-    background-color: rgb(30, 30, 101);
-    background-color: #5F00BA;
+    background-color: #1c0334;
+    
     color: white;
 }
 
@@ -38,8 +38,7 @@
     transition: 0.5s;
 }
 
-#fieldtype:hover{
-    background-color: rgb(120, 100, 224);
+#fieldtype:hover{background-color: #32065c;
 }
 
 #form{
@@ -173,11 +172,11 @@ dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: poi
         const componentsTable = document.querySelector("#compTable")
         async function main(fieldId){
             try{
-                let fieldType= await fetch(`/fieldtypes/${fieldId}`)
+                let fieldType= await fetch(`http://localhost:8000/fieldtypes/${fieldId}`)
                 fieldType= await fieldType.json()
                 let output="" //this string is appended as innerHTML of the components div, to make populating data easier
                 for(i of fieldType.field["components"]){
-                    let comp= await fetch(`/get-components/${i}`)
+                    let comp= await fetch(`http://localhost:8000/get-components/${i}`)
                     comp= await comp.json()
                     
                     output+= `<div style="display:flex; padding:10px; gap:50%;"><p style="width:50px;">${comp.message.name}</p><p>${comp.message.type}</p></div>`
@@ -209,7 +208,7 @@ dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: poi
         // function to populate with all field types
         async function populate(){
             try{
-                let resp= await fetch(`/field-types/`)
+                let resp= await fetch(`http://localhost:8000/field-types/`)
             fieldTypes= await resp.json()
             // const components=[]
             for(i of fieldTypes.field){
@@ -231,7 +230,7 @@ dialog button { padding: 6px 14px; border-radius: 6px; border: none; cursor: poi
 
         options.addEventListener("click", async (e) => {
             const val = e.target.value
-            let comp= await fetch(`/get-components/${val}`)
+            let comp= await fetch(`http://localhost:8000/get-components/${val}`)
             comp= await comp.json()
             console.log(comp)
             newComps.push(val)
